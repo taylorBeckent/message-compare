@@ -1,0 +1,1538 @@
+@import './theme.less';
+
+/**
+ * 全局样式
+ *
+ * 组织原则：
+ *   - 深色仪表盘，四层表面靠明度阶梯 + 发丝线区分，不靠投影（深底上投影会发脏）
+ *   - 所有数字用等宽 + tabular-nums，否则列表滚动时数字会左右抖动
+ *   - 动效只作用于 transform / opacity，绝不动 width/height/top/left
+ *   - 视觉密度高，所以用 divide-y 的行而不是卡片阵列
+ */
+
+// ===========================================================================
+// 基础
+// ===========================================================================
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--mc-void);
+  color: var(--mc-text-hi);
+  font-family: var(--mc-font-ui);
+  font-size: var(--mc-fs-13);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  //. 数据界面上禁用文本自动放大 / 连字，避免等宽列错位
+  text-rendering: optimizeSpeed;
+  overflow: hidden;
+}
+
+code,
+pre,
+.mc-mono {
+  font-family: var(--mc-font-mono);
+  font-variant-ligatures: none;
+}
+
+.mc-num {
+  font-family: var(--mc-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+// 细滚动条：几百条数据的界面里，默认滚动条太抢视线
+.mc-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.26);
+      background-clip: content-box;
+    }
+  }
+}
+
+// ===========================================================================
+// 氛围背景
+// ===========================================================================
+
+.mc-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: var(--mc-z-ambient);
+  pointer-events: none;
+  overflow: hidden;
+
+  &__canvas {
+    display: block;
+    //. 降分辨率渲染后靠 CSS 拉伸，插值默认就是双线性，正好是我们要的柔和效果
+    image-rendering: auto;
+  }
+
+  //. WebGL 不可用时的纯 CSS 降级：三层径向渐变近似同一套配色
+  &--css {
+    background:
+      radial-gradient(120% 80% at 18% 8%, rgba(30, 78, 72, 0.34) 0%, rgba(11, 14, 19, 0) 58%),
+      radial-gradient(100% 70% at 82% 22%, rgba(88, 62, 28, 0.22) 0%, rgba(11, 14, 19, 0) 55%),
+      radial-gradient(140% 110% at 50% 108%, rgba(24, 40, 56, 0.34) 0%, rgba(11, 14, 19, 0) 62%),
+      var(--mc-void);
+  }
+}
+
+// ===========================================================================
+// 外壳
+// ===========================================================================
+
+.mc-app {
+  position: relative;
+  z-index: var(--mc-z-shell);
+  height: 100%;
+  display: grid;
+  grid-template-rows: var(--mc-header-h) 1fr;
+}
+
+.mc-header {
+  position: relative;
+  z-index: var(--mc-z-header);
+  display: flex;
+  align-items: center;
+  gap: var(--mc-gap-4);
+  padding: 0 var(--mc-gap-4);
+  height: var(--mc-header-h);
+  border-bottom: 1px solid var(--mc-hairline);
+  //. 内容会滚过它下面，加毛玻璃避免文字叠文字
+  background: rgba(14, 18, 24, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: var(--mc-inner-light);
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  &__mark {
+    //. 品牌记号：两个错位的方括号，暗示「比对」
+    width: 22px;
+    height: 22px;
+    position: relative;
+    flex: 0 0 auto;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      width: 11px;
+      height: 16px;
+      border: 1.5px solid var(--mc-accent);
+      border-radius: 2px;
+      top: 3px;
+    }
+    &::before {
+      left: 0;
+      border-right-color: transparent;
+      opacity: 0.95;
+    }
+    &::after {
+      right: 0;
+      border-left-color: transparent;
+      opacity: 0.5;
+    }
+  }
+
+  &__title {
+    font-size: var(--mc-fs-14);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  &__sub {
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-lo);
+    white-space: nowrap;
+    margin-top: -2px;
+  }
+
+  &__sep {
+    width: 1px;
+    height: 26px;
+    background: var(--mc-hairline);
+    flex: 0 0 auto;
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 220px;
+  }
+
+  &__label {
+    font-size: var(--mc-fs-10);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--mc-text-faint);
+  }
+
+  &__spacer {
+    flex: 1 1 auto;
+  }
+
+  &__run {
+    display: flex;
+    align-items: center;
+    gap: var(--mc-gap-3);
+    flex: 0 0 auto;
+  }
+}
+
+// ===========================================================================
+// 统计条
+// ===========================================================================
+
+.mc-stats {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+
+  &__item {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: var(--mc-radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background var(--mc-dur-fast) var(--mc-ease), border-color var(--mc-dur-fast) var(--mc-ease);
+    background: none;
+    font: inherit;
+    color: inherit;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.045);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--mc-accent);
+      outline-offset: 1px;
+    }
+
+    &--active {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--mc-hairline-strong);
+    }
+  }
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    align-self: center;
+  }
+
+  &__n {
+    font-family: var(--mc-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--mc-fs-14);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  &__k {
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-lo);
+    white-space: nowrap;
+  }
+}
+
+// ===========================================================================
+// 三栏主体
+// ===========================================================================
+
+.mc-body {
+  display: grid;
+  grid-template-columns: var(--mc-col-left) var(--mc-col-mid) minmax(0, 1fr);
+  min-height: 0;
+  position: relative;
+}
+
+.mc-pane {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(19, 25, 34, 0.55);
+  border-right: 1px solid var(--mc-hairline);
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &__head {
+    flex: 0 0 auto;
+    padding: 10px var(--mc-gap-3) 9px;
+    border-bottom: 1px solid var(--mc-hairline);
+    background: rgba(24, 32, 43, 0.4);
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mc-gap-2);
+    font-size: var(--mc-fs-10);
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--mc-text-lo);
+    font-weight: 600;
+  }
+
+  &__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// ---- 左栏：热力总览 -------------------------------------------------------
+
+.mc-overview {
+  padding: var(--mc-gap-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mc-gap-3);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.mc-heatmap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 120px;
+  border-radius: var(--mc-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), rgba(255, 255, 255, 0)),
+    rgba(11, 14, 19, 0.5);
+  border: 1px solid var(--mc-hairline);
+  overflow: hidden;
+
+  &__canvas {
+    display: block;
+    cursor: crosshair;
+  }
+
+  &__tip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: var(--mc-z-tip);
+    min-width: 150px;
+    max-width: 190px;
+    padding: 7px 9px;
+    border-radius: var(--mc-radius);
+    background: rgba(17, 23, 31, 0.96);
+    border: 1px solid var(--mc-hairline-strong);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    //. 用 transform 定位，跟随鼠标时不会触发布局重排
+    will-change: transform;
+  }
+
+  &__tip-title {
+    font-size: var(--mc-fs-12);
+    font-weight: 600;
+    color: var(--mc-text-hi);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+  }
+
+  &__tip-seq {
+    font-family: var(--mc-font-mono);
+    color: var(--mc-accent);
+    font-size: var(--mc-fs-11);
+  }
+
+  &__tip-row {
+    font-family: var(--mc-font-mono);
+    font-size: var(--mc-fs-10);
+    color: var(--mc-text-mid);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    em {
+      font-style: normal;
+      color: var(--mc-text-faint);
+      font-size: 9px;
+    }
+
+    &--sub {
+      margin-top: 3px;
+      color: var(--mc-text-lo);
+      font-family: var(--mc-font-ui);
+      font-size: var(--mc-fs-11);
+    }
+  }
+}
+
+.mc-legend {
+  flex: 0 0 auto;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--mc-fs-10);
+    color: var(--mc-text-lo);
+    margin-top: 5px;
+    font-family: var(--mc-font-mono);
+  }
+
+  &__title {
+    font-size: var(--mc-fs-10);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--mc-text-faint);
+    margin-bottom: 6px;
+  }
+}
+
+.mc-ramp canvas {
+  display: block;
+  border-radius: 2px;
+}
+
+// 状态分布：横向堆叠条，比饼图更省地方也更易比较
+.mc-dist {
+  flex: 0 0 auto;
+
+  &__title {
+    font-size: var(--mc-fs-10);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--mc-text-faint);
+    margin-bottom: 7px;
+  }
+
+  &__bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.045);
+    gap: 1px;
+  }
+
+  &__seg {
+    height: 100%;
+    //. 宽度变化用 transform: scaleX 会更省，但这里段数少、变化低频，直接写 width 更直观
+    transition: width var(--mc-dur) var(--mc-ease);
+    min-width: 0;
+  }
+
+  &__list {
+    margin-top: 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-mid);
+    cursor: pointer;
+    padding: 1px 3px;
+    border-radius: 3px;
+    background: none;
+    border: none;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.045);
+      color: var(--mc-text-hi);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--mc-accent);
+      outline-offset: -1px;
+    }
+  }
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    flex: 0 0 auto;
+  }
+
+  &__n {
+    margin-left: auto;
+    font-family: var(--mc-font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--mc-text-hi);
+    font-size: var(--mc-fs-12);
+  }
+}
+
+.mc-hint {
+  font-size: var(--mc-fs-11);
+  color: var(--mc-text-faint);
+  line-height: 1.5;
+  padding: 7px 9px;
+  border-left: 2px solid var(--mc-hairline-strong);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 var(--mc-radius-sm) var(--mc-radius-sm) 0;
+}
+
+// ===========================================================================
+// 中栏：记录轨道
+// ===========================================================================
+
+.mc-railtools {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px var(--mc-gap-3);
+  border-bottom: 1px solid var(--mc-hairline);
+  background: rgba(24, 32, 43, 0.28);
+}
+
+.mc-railtools__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mc-seg {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--mc-hairline);
+  border-radius: var(--mc-radius);
+  flex: 1 1 auto;
+
+  &__btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 3px 4px;
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-lo);
+    background: none;
+    border: none;
+    border-radius: var(--mc-radius-sm);
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: color var(--mc-dur-fast) var(--mc-ease), background var(--mc-dur-fast) var(--mc-ease);
+
+    &:hover {
+      color: var(--mc-text-mid);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--mc-accent);
+      outline-offset: -1px;
+    }
+
+    &--on {
+      background: var(--mc-raised);
+      color: var(--mc-text-hi);
+      box-shadow: var(--mc-inner-light);
+    }
+  }
+}
+
+.mc-vlist {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  &__sizer {
+    position: relative;
+    width: 100%;
+  }
+
+  &__window {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    //. GPU 提升为独立合成层，滚动时只重绘这一层
+    will-change: transform;
+  }
+
+  &__empty {
+    padding: 40px var(--mc-gap-4);
+    text-align: center;
+    color: var(--mc-text-lo);
+    font-size: var(--mc-fs-12);
+    line-height: 1.8;
+  }
+}
+
+.mc-row {
+  //. 用文档流而不是绝对定位：滚动时行不用重算 top，
+  //. React.memo 也不会因为位置变化而全部失效
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--mc-row-h);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px 0 12px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  background: transparent;
+  transition: background var(--mc-dur-fast) var(--mc-ease);
+  overflow: hidden;
+
+  //. 左侧强调条用 transform 滑入，不动 layout
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--mc-accent);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform var(--mc-dur) var(--mc-ease);
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mc-accent);
+    outline-offset: -2px;
+  }
+
+  &--on {
+    background: rgba(53, 194, 165, 0.09);
+
+    &::before {
+      transform: scaleY(1);
+    }
+
+    &:hover {
+      background: rgba(53, 194, 165, 0.13);
+    }
+  }
+
+  &--dim {
+    opacity: 0.34;
+  }
+
+  &__seq {
+    flex: 0 0 34px;
+    font-family: var(--mc-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-faint);
+    text-align: right;
+  }
+
+  &__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__names {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mc-font-mono);
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-mid);
+    white-space: nowrap;
+    overflow: hidden;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    i {
+      font-style: normal;
+      color: var(--mc-text-faint);
+      flex: 0 0 auto;
+      font-size: 9px;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--mc-fs-10);
+    color: var(--mc-text-lo);
+    white-space: nowrap;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 4px;
+    height: 14px;
+    border-radius: 2px;
+    font-size: var(--mc-fs-10);
+    line-height: 14px;
+    font-family: var(--mc-font-mono);
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+  }
+
+  &__right {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+}
+
+.mc-spark {
+  display: block;
+}
+
+// ===========================================================================
+// 右栏：比对舞台
+// ===========================================================================
+
+.mc-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: rgba(14, 18, 24, 0.42);
+
+  &__bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--mc-gap-2);
+    padding: 8px var(--mc-gap-3);
+    border-bottom: 1px solid var(--mc-hairline);
+    background: rgba(24, 32, 43, 0.4);
+    box-shadow: var(--mc-inner-light);
+    min-height: 44px;
+  }
+
+  &__id {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  &__seq {
+    font-family: var(--mc-font-mono);
+    font-size: var(--mc-fs-16);
+    font-weight: 600;
+    color: var(--mc-accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  &__names {
+    font-family: var(--mc-font-mono);
+    font-size: var(--mc-fs-12);
+    color: var(--mc-text-mid);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    i {
+      font-style: normal;
+      color: var(--mc-text-faint);
+      margin: 0 5px;
+      font-size: 10px;
+    }
+  }
+
+  &__tools {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+  }
+
+  &__view {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    display: flex;
+  }
+
+  &__meta {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--mc-gap-4);
+    padding: 6px var(--mc-gap-3);
+    border-top: 1px solid var(--mc-hairline);
+    background: rgba(24, 32, 43, 0.3);
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-lo);
+    min-height: 30px;
+  }
+
+  &__metakv {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    b {
+      font-family: var(--mc-font-mono);
+      font-variant-numeric: tabular-nums;
+      color: var(--mc-text-mid);
+      font-weight: 500;
+    }
+  }
+
+  &__spacer {
+    flex: 1 1 auto;
+  }
+
+  &__pos {
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-lo);
+    min-width: 52px;
+    text-align: center;
+  }
+}
+
+// 工具条上的方形图标按钮：和 .mc-seg 同一套视觉语言，但独立成组
+.mc-icobtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--mc-text-lo);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--mc-hairline);
+  border-radius: var(--mc-radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color var(--mc-dur-fast) var(--mc-ease), background var(--mc-dur-fast) var(--mc-ease),
+    border-color var(--mc-dur-fast) var(--mc-ease);
+
+  &:hover:not(:disabled) {
+    color: var(--mc-text-hi);
+    border-color: var(--mc-hairline-strong);
+    background: var(--mc-raised);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--mc-accent);
+    outline-offset: 1px;
+  }
+  &:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+  }
+}
+
+// 上下文行数选择：原生 select 套一层壳，比引入 antd Select 轻得多
+.mc-ctxsel {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--mc-hairline);
+  border-radius: var(--mc-radius-sm);
+  color: var(--mc-text-mid);
+  font-family: var(--mc-font-mono);
+  font-size: var(--mc-fs-11);
+  padding: 1px 4px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--mc-accent);
+    outline-offset: 1px;
+  }
+
+  option {
+    background: var(--mc-elevated);
+  }
+}
+
+.mc-monaco {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+
+  &__host {
+    position: absolute;
+    inset: 0;
+  }
+
+  &__boot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: var(--mc-text-lo);
+    font-size: var(--mc-fs-12);
+    background: rgba(14, 18, 24, 0.6);
+  }
+}
+
+// ===========================================================================
+// DiffLite：无 Monaco 依赖的行级渲染
+// ===========================================================================
+
+.mc-diff {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  font-family: var(--mc-font-mono);
+  font-size: 12px;
+  line-height: 19px;
+  //. 等宽字体的行高必须和 Monaco 对得上，否则两种模式切换时视觉会跳
+  background: rgba(11, 14, 19, 0.34);
+
+  &__inner {
+    min-width: 100%;
+    width: max-content;
+    padding-bottom: 40vh;
+
+    //. 软换行模式：不再横向滚动，长报文在窄屏上也能整行读完
+    &--wrap {
+      width: auto;
+
+      .mc-diff__row {
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .mc-diff__code {
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    }
+  }
+
+  &__row {
+    display: flex;
+    align-items: stretch;
+    min-width: 100%;
+    white-space: pre;
+
+    &--add {
+      background: var(--mc-add-bg);
+
+      .mc-diff__sign {
+        color: var(--mc-add-mark);
+      }
+      .mc-diff__code {
+        color: var(--mc-add-fg);
+      }
+    }
+
+    &--del {
+      background: var(--mc-del-bg);
+
+      .mc-diff__sign {
+        color: var(--mc-del-mark);
+      }
+      .mc-diff__code {
+        color: var(--mc-del-fg);
+        //. 删除行加删除线会削弱可读性，改用降低不透明度
+        opacity: 0.9;
+      }
+    }
+
+    &:hover {
+      filter: brightness(1.16);
+    }
+  }
+
+  &__no {
+    flex: 0 0 auto;
+    width: 46px;
+    padding: 0 7px 0 0;
+    text-align: right;
+    color: var(--mc-text-faint);
+    font-size: 11px;
+    user-select: none;
+    background: rgba(0, 0, 0, 0.2);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  &__sign {
+    flex: 0 0 auto;
+    width: 16px;
+    text-align: center;
+    color: var(--mc-text-faint);
+    user-select: none;
+  }
+
+  &__code {
+    flex: 1 1 auto;
+    padding: 0 12px 0 6px;
+    color: var(--mc-text-mid);
+    //. 保留空格与缩进，报文的可读性全靠它
+    white-space: pre;
+  }
+
+  &__mark {
+    //. 行内高亮：真正变化的那几个字符
+    background: var(--mc-add-bg-strong);
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  &__row--del &__mark {
+    background: var(--mc-del-bg-strong);
+  }
+
+  &__gap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    //. 与正文行同高，这样「跳到第 N 行」可以直接用 N * 19px 算出来，不必挂 ref
+    height: 19px;
+    box-sizing: border-box;
+    padding: 0 12px;
+    color: var(--mc-text-faint);
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.022);
+    border-top: 1px dashed rgba(255, 255, 255, 0.07);
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.07);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+
+    &:hover {
+      color: var(--mc-text-mid);
+      background: rgba(53, 194, 165, 0.07);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--mc-accent);
+      outline-offset: -2px;
+    }
+
+    &::after {
+      content: '';
+      flex: 1 1 auto;
+      height: 1px;
+      background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.09) 0 3px, transparent 3px 6px);
+    }
+
+    &--open {
+      color: var(--mc-accent);
+    }
+  }
+
+  &__more {
+    padding: 10px 12px 30vh;
+    text-align: center;
+
+    button {
+      background: var(--mc-raised);
+      border: 1px solid var(--mc-hairline-strong);
+      color: var(--mc-text-mid);
+      font-family: inherit;
+      font-size: var(--mc-fs-11);
+      padding: 5px 14px;
+      border-radius: var(--mc-radius);
+      cursor: pointer;
+      transition: color var(--mc-dur-fast) var(--mc-ease), background var(--mc-dur-fast) var(--mc-ease);
+
+      &:hover {
+        color: var(--mc-text-hi);
+        background: #24303f;
+      }
+      &:focus-visible {
+        outline: 2px solid var(--mc-accent);
+        outline-offset: 2px;
+      }
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+  }
+
+  &__status {
+    padding: 10px 14px;
+    font-family: var(--mc-font-ui);
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-lo);
+    border-top: 1px solid var(--mc-hairline);
+  }
+
+  //. 不复用 .mc-scroll —— 那个把 overflow-x 关掉了，而 diff 需要横向滚动看长报文
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+
+  &::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.26);
+      background-clip: content-box;
+    }
+  }
+}
+
+// 列表空态里的文字按钮
+.mc-linkbtn {
+  background: none;
+  border: none;
+  color: var(--mc-accent);
+  font: inherit;
+  font-size: var(--mc-fs-12);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--mc-radius-sm);
+
+  &:hover {
+    background: var(--mc-accent-soft);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--mc-accent);
+    outline-offset: 1px;
+  }
+}
+
+// ===========================================================================
+// 进度环
+// ===========================================================================
+
+.mc-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  canvas {
+    display: block;
+  }
+
+  &__text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    margin-left: 75px;
+
+    b {
+      font-family: var(--mc-font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mc-text-hi);
+      letter-spacing: -0.02em;
+    }
+
+    i {
+      font-style: normal;
+      font-size: 8px;
+      color: var(--mc-text-lo);
+      letter-spacing: 0.04em;
+      margin-top: -1px;
+    }
+  }
+}
+
+// ===========================================================================
+// 空 / 错 / 载 三态
+// ===========================================================================
+
+.mc-state {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  text-align: center;
+  color: var(--mc-text-lo);
+
+  &__icon {
+    font-size: 26px;
+    color: var(--mc-text-faint);
+    opacity: 0.75;
+  }
+
+  &__title {
+    font-size: var(--mc-fs-14);
+    color: var(--mc-text-mid);
+    font-weight: 500;
+  }
+
+  &__desc {
+    font-size: var(--mc-fs-12);
+    line-height: 1.7;
+    max-width: 46ch;
+    color: var(--mc-text-lo);
+  }
+}
+
+// 骨架屏：比对进行中时列表行的占位
+.mc-skel {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.035) 25%, rgba(255, 255, 255, 0.08) 37%, rgba(255, 255, 255, 0.035) 63%);
+  background-size: 400% 100%;
+  animation: mc-shimmer 1.5s ease-in-out infinite;
+  border-radius: 3px;
+}
+
+@keyframes mc-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+// ===========================================================================
+// 导出中心
+// ===========================================================================
+
+.mc-export {
+  &__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 4px 0 0;
+  }
+
+  &__step {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 2px;
+    font-size: var(--mc-fs-12);
+    color: var(--mc-text-lo);
+    transition: color var(--mc-dur-fast) var(--mc-ease);
+
+    &--on {
+      color: var(--mc-text-hi);
+    }
+    &--done {
+      color: var(--mc-text-mid);
+    }
+  }
+
+  &__tick {
+    flex: 0 0 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--mc-hairline-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--mc-text-lo);
+
+    &--on {
+      border-color: var(--mc-accent);
+      color: var(--mc-accent);
+      box-shadow: 0 0 0 3px var(--mc-accent-soft);
+    }
+    &--done {
+      border-color: var(--mc-ok);
+      background: var(--mc-ok);
+      color: #0b0e13;
+    }
+  }
+
+  &__note {
+    margin-left: auto;
+    font-family: var(--mc-font-mono);
+    font-size: var(--mc-fs-11);
+    color: var(--mc-text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 1px;
+    background: var(--mc-hairline);
+    border: 1px solid var(--mc-hairline);
+    border-radius: var(--mc-radius);
+    overflow: hidden;
+    margin-bottom: var(--mc-gap-4);
+  }
+
+  &__cell {
+    background: var(--mc-surface);
+    padding: 9px 11px;
+
+    dt {
+      font-size: var(--mc-fs-10);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--mc-text-faint);
+      margin-bottom: 3px;
+    }
+    dd {
+      margin: 0;
+      font-family: var(--mc-font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: var(--mc-fs-16);
+      font-weight: 600;
+      color: var(--mc-text-hi);
+      letter-spacing: -0.02em;
+    }
+  }
+
+  //. 导出物到底能不能离线打开，是用户最担心的一点，所以这段话常驻而不是塞进 tooltip
+  &__hint {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 9px 12px;
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-hairline);
+    border-left: 2px solid var(--mc-accent-line);
+    border-radius: var(--mc-radius-sm);
+    font-size: var(--mc-fs-11);
+    line-height: 1.7;
+    color: var(--mc-text-lo);
+
+    b {
+      font-weight: 600;
+    }
+  }
+
+  &__error {
+    margin-top: var(--mc-gap-3);
+    padding: 9px 12px;
+    background: rgba(224, 87, 79, 0.09);
+    border: 1px solid rgba(224, 87, 79, 0.3);
+    border-radius: var(--mc-radius-sm);
+    font-size: var(--mc-fs-12);
+    line-height: 1.65;
+    color: var(--mc-del-fg);
+    //. 错误信息可能是一大坨堆栈，允许换行别撑破弹窗
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+}
+
+// ===========================================================================
+// antd 覆写
+// ===========================================================================
+
+/**
+ * 这里刻意不套在 .mc-app 下面。
+ *
+ * antd 的 Modal / Tooltip / Select 下拉 / message 都是渲染到 document.body 的
+ * portal，压根不在 .mc-app 的 DOM 子树里 —— 套进去那些规则一条都不会生效。
+ * 全站只有这一套 antd 暗色主题，直接挂在 :root 上才是对的。
+ * 用 :root 而不是 html：伪类的权重比元素选择器高一级，
+ * 才能盖过 antd 自己的 .ant-btn-primary[disabled]:hover 这类三段式规则。
+ */
+:root {
+  //. antd 暗色主题的默认主色是蓝，和这里的墨绿强调色不搭，统一改掉
+  .ant-btn-primary {
+    background: var(--mc-accent);
+    border-color: var(--mc-accent);
+    color: #07100e;
+    font-weight: 600;
+    box-shadow: none;
+
+    &:hover,
+    &:focus {
+      background: #46d3b6;
+      border-color: #46d3b6;
+      color: #07100e;
+    }
+    &:active {
+      background: #2aab91;
+      border-color: #2aab91;
+      //. 触感反馈：轻微内缩，只动 transform
+      transform: scale(0.98);
+    }
+    &[disabled],
+    &[disabled]:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: var(--mc-hairline);
+      color: var(--mc-text-faint);
+    }
+  }
+
+  .ant-btn {
+    border-radius: var(--mc-radius);
+    transition: all var(--mc-dur-fast) var(--mc-ease);
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  .ant-btn-default,
+  .ant-btn-text,
+  .ant-btn-link {
+    color: var(--mc-text-mid);
+  }
+
+  .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+    background: rgba(0, 0, 0, 0.28);
+    border-color: var(--mc-hairline-strong);
+    border-radius: var(--mc-radius);
+    color: var(--mc-text-hi);
+  }
+
+  .ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+    border-color: var(--mc-accent);
+    box-shadow: 0 0 0 2px var(--mc-accent-soft);
+  }
+
+  .ant-input,
+  .ant-input-affix-wrapper {
+    background: rgba(0, 0, 0, 0.28);
+    border-color: var(--mc-hairline-strong);
+    border-radius: var(--mc-radius);
+    color: var(--mc-text-hi);
+
+    &::placeholder {
+      color: var(--mc-text-faint);
+    }
+  }
+
+  .ant-input-affix-wrapper-focused,
+  .ant-input:focus,
+  .ant-input-focused {
+    border-color: var(--mc-accent);
+    box-shadow: 0 0 0 2px var(--mc-accent-soft);
+  }
+
+  .ant-switch-checked {
+    background: var(--mc-accent);
+  }
+
+  .ant-modal-content {
+    background: var(--mc-elevated);
+    border: 1px solid var(--mc-hairline-strong);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    border-radius: var(--mc-radius-lg);
+  }
+  .ant-modal-header {
+    background: transparent;
+    border-bottom: 1px solid var(--mc-hairline);
+  }
+  .ant-modal-title {
+    color: var(--mc-text-hi);
+    font-size: var(--mc-fs-14);
+    font-weight: 600;
+  }
+  .ant-modal-footer {
+    border-top: 1px solid var(--mc-hairline);
+  }
+
+  .ant-tooltip-inner {
+    background: rgba(17, 23, 31, 0.97);
+    border: 1px solid var(--mc-hairline-strong);
+    font-size: var(--mc-fs-11);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  }
+  .ant-tooltip-arrow-content {
+    background: rgba(17, 23, 31, 0.97);
+  }
+}
+
+// ===========================================================================
+// 动效偏好
+// ===========================================================================
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+// ===========================================================================
+// 窄屏
+// ===========================================================================
+
+@media (max-width: 1024px) {
+  .mc-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  //. 窄屏下热力总览收进顶部，中栏和右栏改为上下堆叠由 JS 控制
+  .mc-pane--overview {
+    border-right: none;
+    border-bottom: 1px solid var(--mc-hairline);
+  }
+}

@@ -1,0 +1,108 @@
+/**
+ * 设计令牌
+ *
+ * 全部用 CSS 自定义属性而不是 Less 变量：运行时可覆盖，
+ * 后续要做浅色主题或者跟着宿主页面的品牌色走，改一处就行。
+ */
+
+:root {
+  // ---- 表面层级 ---------------------------------------------------------
+  //. 四层表面，靠「明度阶梯 + 1px 发丝线 + 顶部内高光」区分，
+  //. 不靠投影 —— 深色界面上一旦用大投影就会发灰发脏。
+  --mc-void: #0b0e13;
+  --mc-base: #0e1218;
+  --mc-surface: #131922;
+  --mc-elevated: #18202b;
+  --mc-raised: #1e2836;
+
+  --mc-hairline: rgba(255, 255, 255, 0.065);
+  --mc-hairline-strong: rgba(255, 255, 255, 0.12);
+  --mc-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
+  // ---- 文本 -------------------------------------------------------------
+  --mc-text-hi: #e8edf4;
+  --mc-text-mid: #98a5b6;
+  --mc-text-lo: #616d7c;
+  --mc-text-faint: #454f5c;
+
+  // ---- 强调与语义 -------------------------------------------------------
+  --mc-accent: #35c2a5;
+  --mc-accent-soft: rgba(53, 194, 165, 0.14);
+  --mc-accent-line: rgba(53, 194, 165, 0.42);
+
+  --mc-ok: #4f9d69;
+  --mc-warn: #d9a441;
+  --mc-bad: #e0574f;
+  --mc-info: #5b8db8;
+
+  // ---- 差异高亮 ---------------------------------------------------------
+  --mc-add-bg: rgba(79, 157, 105, 0.13);
+  --mc-add-bg-strong: rgba(79, 157, 105, 0.34);
+  --mc-add-fg: #8ed7a6;
+  --mc-add-mark: #4f9d69;
+
+  --mc-del-bg: rgba(224, 87, 79, 0.12);
+  --mc-del-bg-strong: rgba(224, 87, 79, 0.32);
+  --mc-del-fg: #f0938c;
+  --mc-del-mark: #e0574f;
+
+  // ---- 字体 -------------------------------------------------------------
+  //. 不用 Inter / 不用衬线体（数据界面上衬线体会显著降低扫读速度）。
+  //. 中文优先苹方 / 微软雅黑，等宽字体用于所有报文与数字。
+  --mc-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+  --mc-font-mono: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+
+  --mc-fs-10: 10px;
+  --mc-fs-11: 11px;
+  --mc-fs-12: 12px;
+  --mc-fs-13: 13px;
+  --mc-fs-14: 14px;
+  --mc-fs-16: 16px;
+  --mc-fs-20: 20px;
+
+  // ---- 节奏 -------------------------------------------------------------
+  --mc-gap-1: 4px;
+  --mc-gap-2: 8px;
+  --mc-gap-3: 12px;
+  --mc-gap-4: 16px;
+  --mc-gap-5: 24px;
+
+  --mc-radius-sm: 3px;
+  --mc-radius: 5px;
+  --mc-radius-lg: 8px;
+
+  //. 统一缓动：快出慢停，比默认的 ease 更「跟手」
+  --mc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mc-dur-fast: 120ms;
+  --mc-dur: 220ms;
+
+  // ---- 布局 -------------------------------------------------------------
+  --mc-col-left: 288px;
+  --mc-col-mid: 352px;
+  --mc-header-h: 58px;
+  --mc-row-h: 46px;
+
+  --mc-z-ambient: 0;
+  --mc-z-shell: 1;
+  --mc-z-header: 20;
+  --mc-z-tip: 60;
+  --mc-z-modal: 1000;
+}
+
+// ---- 布局断点下的收窄 ----------------------------------------------------
+
+@media (max-width: 1440px) {
+  :root {
+    --mc-col-left: 248px;
+    --mc-col-mid: 316px;
+  }
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --mc-col-left: 216px;
+    --mc-col-mid: 288px;
+  }
+}
